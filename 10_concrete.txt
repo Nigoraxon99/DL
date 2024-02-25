@@ -1,0 +1,107 @@
+
+R version 4.2.3 (2023-03-15) -- "Shortstop Beagle"
+Copyright (C) 2023 The R Foundation for Statistical Computing
+Platform: aarch64-apple-darwin20 (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+[R.app GUI 1.79 (8198) aarch64-apple-darwin20]
+
+[History restored from /Users/nigorakhonganieva/.Rapp.history]
+
+> library(ggvis) #Data visulization
+> library(psych) #Scatterplot matrix
+> library(knitr) #html table
+> library(neuralnet) #artifical neural network
+> concrete <- read.csv(file = "Desktop/DeepLearning/Concrete_Data-2.csv")
+> 
+> knitr::kable(head(concrete), caption = "Partial Table Preview")
+
+
+Table: Partial Table Preview
+
+| cement|  slag| ash| water| superplastic| coarseagg| fineagg| age| strength|
+|------:|-----:|---:|-----:|------------:|---------:|-------:|---:|--------:|
+|  540.0|   0.0|   0|   162|          2.5|    1040.0|   676.0|  28|    79.99|
+|  540.0|   0.0|   0|   162|          2.5|    1055.0|   676.0|  28|    61.89|
+|  332.5| 142.5|   0|   228|          0.0|     932.0|   594.0| 270|    40.27|
+|  332.5| 142.5|   0|   228|          0.0|     932.0|   594.0| 365|    41.05|
+|  198.6| 132.4|   0|   192|          0.0|     978.4|   825.5| 360|    44.30|
+|  266.0| 114.0|   0|   228|          0.0|     932.0|   670.0|  90|    47.03|
+> str(concrete)
+'data.frame':	1030 obs. of  9 variables:
+ $ cement      : num  540 540 332 332 199 ...
+ $ slag        : num  0 0 142 142 132 ...
+ $ ash         : num  0 0 0 0 0 0 0 0 0 0 ...
+ $ water       : num  162 162 228 228 192 228 228 228 228 228 ...
+ $ superplastic: num  2.5 2.5 0 0 0 0 0 0 0 0 ...
+ $ coarseagg   : num  1040 1055 932 932 978 ...
+ $ fineagg     : num  676 676 594 594 826 ...
+ $ age         : num  28 28 270 365 360 90 365 28 28 28 ...
+ $ strength    : num  80 61.9 40.3 41 44.3 ...
+> concrete %>% ggvis(x = ~strength, fill:= "#27bc9c") %>% layer_histograms() %>% layer_paths(y = ~strength, 35.82, stroke := "red")
+Guessing width = 2 # range / 41
+> pairs.panels(concrete[c("cement", "slag", "ash", "strength")])
+> pairs.panels(concrete[c("superplastic", "coarseagg", "fineagg", "age", "strength")])
+> normalize <- function(x){
++   return ((x - min(x))/(max(x) - min(x) ))
++ }
+> 
+> concrete_norm <- as.data.frame(lapply(concrete, normalize))
+> kable(round(head(concrete_norm), digits = 3), caption = "Normalized Data Preview")
+
+
+Table: Normalized Data Preview
+
+| cement|  slag| ash| water| superplastic| coarseagg| fineagg|   age| strength|
+|------:|-----:|---:|-----:|------------:|---------:|-------:|-----:|--------:|
+|  1.000| 0.000|   0| 0.321|        0.078|     0.695|   0.206| 0.074|    0.967|
+|  1.000| 0.000|   0| 0.321|        0.078|     0.738|   0.206| 0.074|    0.742|
+|  0.526| 0.396|   0| 0.848|        0.000|     0.381|   0.000| 0.739|    0.473|
+|  0.526| 0.396|   0| 0.848|        0.000|     0.381|   0.000| 1.000|    0.482|
+|  0.221| 0.368|   0| 0.561|        0.000|     0.516|   0.581| 0.986|    0.523|
+|  0.374| 0.317|   0| 0.848|        0.000|     0.381|   0.191| 0.245|    0.557|
+> #training set
+> concrete_train <- concrete_norm[1:773, ]
+> 
+> #test set
+> concrete_test <- concrete_norm[774:1030, ]
+> #Build a neural network with one hidden layer 
+> concrete_model <- neuralnet(strength ~ cement + slag + ash + water + superplastic + coarseagg + fineagg + age , data = concrete_train, hidden = 1)
+> plot(concrete_model)
+> #building the predictor, exclude the target variable column
+> model_results <- compute(concrete_model, concrete_test[1:8])
+> 
+> #store the net.results column 
+> predicted_strength <- model_results$net.result
+> cor(predicted_strength, concrete_test$strength)
+          [,1]
+[1,] 0.7208221
+> #building the new model
+> concrete_model2 <- neuralnet(strength ~ cement + slag + ash + water + superplastic + coarseagg + fineagg + age, data = concrete_train, hidden = 5 )
+#nuilding the new predictor
+model_results2 <- compute(concrete_model2, concrete_test[1:8])
+
+#storing the results
+predicted_strength2 <- model_results2$net.result
+> #nuilding the new predictor
+> model_results2 <- compute(concrete_model2, concrete_test[1:8])
+> 
+> #storing the results
+> predicted_strength2 <- model_results2$net.result
+> cor(predicted_strength2, concrete_test$strength)
+          [,1]
+[1,] 0.6611318
+> 
